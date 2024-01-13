@@ -71,6 +71,7 @@ func Login(c *gin.Context) {
 	user := map[string]string{
 		"username": u.Username,
 		"email":    u.Email,
+		"name": u.Name,
 	}
 
 	tokenExp, err := ParseTokenExp(token)

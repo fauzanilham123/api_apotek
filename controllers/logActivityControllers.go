@@ -22,6 +22,8 @@ func GetAllLogActivity(c *gin.Context) {
 	if sort == "desc" {
 		sortOrder = "DESC"
 	}
+	orderBy := c.DefaultQuery("orderBy", "id")
+
 
 	pagination := ExtractPagination(c)
 
@@ -31,6 +33,7 @@ func GetAllLogActivity(c *gin.Context) {
 	delete(queryParams, "page")
 	delete(queryParams, "perPage")
 	delete(queryParams, "sort")
+	delete(queryParams, "orderBy")
 
 	// Loop through query parameters for filtering
 	for column, values := range queryParams {
@@ -53,7 +56,8 @@ func GetAllLogActivity(c *gin.Context) {
 	offset := (pagination.Page - 1) * pagination.PerPage
 
 	// Apply pagination and sorting
-	err := db.Order("id " + sortOrder).Offset(offset).Limit(pagination.PerPage).Preload("User").Find(&logActivity).Error
+	err := db.Order(orderBy + " " + sortOrder).Preload("User").Offset(offset).Limit(pagination.PerPage).Find(&logActivity).Error
+
 	if err != nil {
 		SendError(c, "internal server error", err.Error())
 		return

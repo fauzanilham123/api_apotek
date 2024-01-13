@@ -49,18 +49,46 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 		c.Set("db", db)
 	})
 
+	// Menangani rute yang tidak ditemukan
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Not Found"})
+	})
+
 	r.POST("/register", controllers.Register)
     r.POST("/login", controllers.Login)
 	r.GET("/logactivity/", controllers.GetAllLogActivity)
 	r.GET("/user/", controllers.GetAllUser)
+	r.GET("/user/:id", controllers.GetUserById)
 	r.GET("/obat/", controllers.GetAllObat)
 	r.GET("/obat/:id", controllers.GetObatById)
+	r.GET("/recipe/", controllers.GetAllRecipe)
+	r.GET("/recipe/:id", controllers.GetRecipeById)
+	r.GET("/transaction/", controllers.GetAllTransaction)
+	r.GET("/transaction/:id", controllers.GetTransactionById)
 
-	Obat := r.Group("/obat")
-    Obat.Use(middlewares.JwtAuthMiddleware()) //use jwt
-    Obat.POST("/", controllers.CreateObat)
-    Obat.PATCH("/:id", controllers.UpdateObat)
-    Obat.DELETE("/:id", controllers.DeleteObat)
+	obat := r.Group("/obat")
+    obat.Use(middlewares.JwtAuthMiddleware()) //use jwt
+    obat.POST("/", controllers.CreateObat)
+    obat.PATCH("/:id", controllers.UpdateObat)
+    obat.DELETE("/:id", controllers.DeleteObat)
+	
+	recipe := r.Group("/recipe")
+    recipe.Use(middlewares.JwtAuthMiddleware()) //use jwt
+    recipe.POST("/", controllers.CreateRecipe)
+    recipe.PATCH("/:id", controllers.UpdateRecipe)
+    recipe.DELETE("/:id", controllers.DeleteRecipe)
+	
+	user := r.Group("/user")
+    user.Use(middlewares.JwtAuthMiddleware()) //use jwt
+    user.POST("/", controllers.CreateUser)
+    user.PATCH("/:id", controllers.UpdateUser)
+    user.DELETE("/:id", controllers.DeleteUser)
+	
+	transaction := r.Group("/transaction")
+    transaction.Use(middlewares.JwtAuthMiddleware()) //use jwt
+    transaction.POST("/", controllers.CreateTransaction)
+    transaction.PATCH("/:id", controllers.UpdateTransaction)
+    transaction.DELETE("/:id", controllers.DeleteTransaction)
 
 	return r
 }

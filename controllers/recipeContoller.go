@@ -9,19 +9,20 @@ import (
 	"gorm.io/gorm"
 )
 
-type obatInput struct {
-	Kode        	string     		`gorm:"unique" json:"kode"`
-	Name        	string  		`json:"name"`
-	ExpiredDate     string      	`json:"expired_date"`
-	Jumlah        	int      		`json:"jumlah"`
-	HargaPerUnit    int      		`json:"harga_per_unit"`
-	CreatedAt 		time.Time 		`json:"created_at"`
-	UpdatedAt 		time.Time 		`json:"updated_at"`
-}
+	type recipeInput struct {
+		No      			int       		`gorm:"unique" json:"no"`
+		Tanggal 			string 			`json:"tanggal"`
+		Nama_pasien 		string 			`json:"nama_pasien"`
+		Nama_dokter 		string 			`json:"nama_dokter"`
+		Nama_obat 			string 			`json:"obat_resep"`
+		Jumlah_obat_resep 	int 			`json:"jumlah_obat_resep"`
+		Flag 				int 			`json:"flag"`
+	}
 
-func GetAllObat(c *gin.Context) {
+
+func GetAllRecipe(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
-	var obat []models.Drug
+	var recipe []models.Recipe
 
 	sort := c.DefaultQuery("sortBy", "asc")
 	// Default to ascending if not provided
@@ -51,7 +52,7 @@ func GetAllObat(c *gin.Context) {
 	}
 
 	var totalCount int64
-	query.Model(&obat).Where("flag = 1").Count(&totalCount)
+	query.Model(&recipe).Where("flag = 1").Count(&totalCount)
 
 	// Calculate the total pages
 	totalPages := int(math.Ceil(float64(totalCount) / float64(pagination.PerPage)))
@@ -60,13 +61,11 @@ func GetAllObat(c *gin.Context) {
 	offset := (pagination.Page - 1) * pagination.PerPage
 
 	// Apply pagination and sorting
-	err := query.Order(orderBy + " " + sortOrder).Offset(offset).Limit(pagination.PerPage).Find(&obat).Error
+	err := query.Order(orderBy + " " + sortOrder).Offset(offset).Limit(pagination.PerPage).Find(&recipe).Error
 	if err != nil {
 		SendError(c, "internal server error", err.Error())
 		return
 	}
-
-	
 
 	// Calculate "last_page" based on total pages
 	lastPage := totalPages
@@ -83,7 +82,7 @@ func GetAllObat(c *gin.Context) {
 	}
 
 	response := map[string]interface{}{
-		"data":         obat,
+		"data":         recipe,
 		"current_page": pagination.Page,
 		"last_page":    lastPage,
 		"per_page":     pagination.PerPage,
@@ -93,93 +92,91 @@ func GetAllObat(c *gin.Context) {
 		"totalCount":   totalCount,
 	}
 
-	checkAndLogActivity(c, "Get all obat", response)
+	checkAndLogActivity(c, "Get all recipe", response)
 }
 
-func CreateObat(c *gin.Context) {
+func CreateRecipe(c *gin.Context) {
 	// Validate input
-	var input obatInput
+	var input recipeInput
 	if err := c.ShouldBind(&input); err != nil {
 		SendError(c, "error", err.Error())
 		return
 	}
 
-
 	// Create
-	obat := models.Drug{Kode: input.Kode, Name: input.Name, ExpiredDate: input.ExpiredDate, Jumlah: input.Jumlah, HargaPerUnit: input.HargaPerUnit, Flag: 1, CreatedAt: time.Now()}
+	recipe := models.Recipe{No: input.No, Tanggal: input.Tanggal, Nama_pasien: input.Nama_pasien, Nama_dokter: input.Nama_dokter, Nama_obat: input.Nama_obat, Jumlah_obat_resep: input.Jumlah_obat_resep,Flag: 1, CreatedAt: time.Now()}
 	db := c.MustGet("db").(*gorm.DB)
-	db.Create(&obat)
+	db.Create(&recipe)
 
-	SendResponse(c, obat, "success")
-	activityMessage := "Create obat: " + input.Name
+	SendResponse(c, recipe, "success")
+	activityMessage := "Create recipe: " + input.Nama_obat
 	activitylog(c, activityMessage)
 }
 
-func GetObatById(c *gin.Context) { // Get model if exist
-	var obat models.Drug
+func GetRecipeById(c *gin.Context) { // Get model if exist
+	var recipe models.Recipe
 
 	db := c.MustGet("db").(*gorm.DB)
-	if err := db.Where("id = ?", c.Param("id")).First(&obat).Error; err != nil {
+	if err := db.Where("id = ?", c.Param("id")).First(&recipe).Error; err != nil {
 		SendError(c, "Record not found", err.Error())
 		return
 	}
 
-	checkAndLogActivity(c, "Get obat by id "+c.Param("id"), obat)
+	checkAndLogActivity(c, "Get recipe by id "+c.Param("id"), recipe)
 }
 
-func UpdateObat(c *gin.Context) {
+func UpdateRecipe(c *gin.Context) {
 
 	db := c.MustGet("db").(*gorm.DB)
 	// Get model if exist
-	var obat models.Drug
-	if err := db.Where("id = ?", c.Param("id")).First(&obat).Error; err != nil {
+	var recipe models.Recipe
+	if err := db.Where("id = ?", c.Param("id")).First(&recipe).Error; err != nil {
 		SendError(c, "Record not found", err.Error())
 		return
 	}
 
 	// Validate input
-	var input obatInput
+	var input recipeInput
 	if err := c.ShouldBind(&input); err != nil {
 		SendError(c, "error", err.Error())
 		return
 	}
 
+	oldName := recipe.Nama_obat
 
-
-	oldName := obat.Name
-
-	var updatedInput models.Drug
-	updatedInput.Kode = input.Kode
-	updatedInput.Name = input.Name
-	updatedInput.ExpiredDate = input.ExpiredDate
-	updatedInput.Jumlah = input.Jumlah
-	updatedInput.HargaPerUnit = input.HargaPerUnit
+	var updatedInput models.Recipe
+	updatedInput.No = input.No
+	updatedInput.Tanggal = input.Tanggal
+	updatedInput.Nama_dokter = input.Nama_dokter
+	updatedInput.Nama_obat = input.Nama_obat
+	updatedInput.Nama_pasien = input.Nama_pasien
+	updatedInput.Jumlah_obat_resep = input.Jumlah_obat_resep
 	updatedInput.UpdatedAt = time.Now()
 
-	db.Model(&obat).Updates(updatedInput)
+	db.Model(&recipe).Updates(updatedInput)
 
-	SendResponse(c, obat, "success")
-	activityMessage := "Update obat:'" + oldName + "' to '" + input.Name + "'"
+	SendResponse(c, recipe, "success")
+	activityMessage := "Update recipe:'" + oldName + "' to '" + input.Nama_obat + "'"
 	activitylog(c, activityMessage)
 }
 
-func DeleteObat(c *gin.Context) {
+func DeleteRecipe(c *gin.Context) {
 	// Get model if exiForm
 	db := c.MustGet("db").(*gorm.DB)
-	var obat models.Drug
-	if err := db.Where("id = ?", c.Param("id")).First(&obat).Error; err != nil {
+	var recipe models.Recipe
+	if err := db.Where("id = ?", c.Param("id")).First(&recipe).Error; err != nil {
 		SendError(c, "Record not found", err.Error())
 		return
 	}
 
 	// Set the flag to 0
-	if err := db.Model(&obat).Update("flag", 0).Error; err != nil {
+	if err := db.Model(&recipe).Update("flag", 0).Error; err != nil {
 		SendError(c, "Failed to delete", err.Error())
 		return
 	}
 
 	// Return success response
-	SendResponse(c, obat, "success")
-	activityMessage := "Delete obat: " + obat.Name
+	SendResponse(c, recipe, "success")
+	activityMessage := "Delete recipe: " + recipe.Nama_obat
 	activitylog(c, activityMessage)
 }
