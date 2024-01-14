@@ -4,6 +4,7 @@ import (
 	"api_apotek/models"
 	"api_apotek/utils/token"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -24,6 +25,25 @@ func GetAllLogActivity(c *gin.Context) {
 	}
 	orderBy := c.DefaultQuery("orderBy", "id")
 
+	searchQuery := c.Query("search")
+
+	// If search query is provided, apply the search condition
+	if searchQuery != "" {
+		// Specify the columns you want to search in
+		searchColumns := []string{"user_id", "activity"}
+
+		// Create a dynamic OR query for each searchable column
+		var orQueries []string
+		var args []interface{}
+		for _, column := range searchColumns {
+			orQueries = append(orQueries, column+" LIKE ?")
+			args = append(args, "%"+searchQuery+"%")
+		}
+
+		// Combine OR queries with AND condition
+		db = db.Where(strings.Join(orQueries, " OR "), args...)
+	}
+
 
 	pagination := ExtractPagination(c)
 
@@ -34,6 +54,7 @@ func GetAllLogActivity(c *gin.Context) {
 	delete(queryParams, "perPage")
 	delete(queryParams, "sort")
 	delete(queryParams, "orderBy")
+	delete(queryParams, "search")
 
 	// Loop through query parameters for filtering
 	for column, values := range queryParams {

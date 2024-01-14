@@ -6,7 +6,7 @@ type (
 	Drug struct {
 		ID        		uint     		`gorm:"primary_key" json:"id"`
 		Kode        	string      	`gorm:"unique" json:"kode"`
-		Name        	string      	`json:"obat"`
+		Name        	string      	`json:"name"`
 		ExpiredDate     string      	`json:"expired_date"`
 		Jumlah        	int      		`json:"jumlah"`
 		HargaPerUnit    int      		`json:"harga_per_unit"`

@@ -3,6 +3,7 @@ package controllers
 import (
 	"api_apotek/models"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -35,6 +36,25 @@ func GetAllRecipe(c *gin.Context) {
 	pagination := ExtractPagination(c)
 	query := db.Where("flag = 1")
 
+	searchQuery := c.Query("search")
+
+	// If search query is provided, apply the search condition
+	if searchQuery != "" {
+		// Specify the columns you want to search in
+		searchColumns := []string{"no", "tanggal", "nama_pasien","nama_dokter","nama_obat","jumlah_obat_resep"}
+
+		// Create a dynamic OR query for each searchable column
+		var orQueries []string
+		var args []interface{}
+		for _, column := range searchColumns {
+			orQueries = append(orQueries, column+" LIKE ?")
+			args = append(args, "%"+searchQuery+"%")
+		}
+
+		// Combine OR queries with AND condition
+		query = query.Where(strings.Join(orQueries, " OR "), args...)
+	}
+
 	// Get all query parameters and loop through them
 	queryParams := c.Request.URL.Query()
 	// Remove 'page' and 'perPage' keys from queryParams
@@ -42,6 +62,7 @@ func GetAllRecipe(c *gin.Context) {
 	delete(queryParams, "perPage")
 	delete(queryParams, "sort")
 	delete(queryParams, "orderBy")
+	delete(queryParams, "search")
 	for column, values := range queryParams {
 		value := values[0] // In case there are multiple values, we take the first one
 
